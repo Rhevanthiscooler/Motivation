@@ -503,7 +503,7 @@
       const cred=await createUserWithEmailAndPassword(auth,email,pw);
       await updateProfile(cred.user,{displayName:name});
       await setDoc(userDoc(cred.user.uid),{name,email,streaks:[],createdAt:serverTimestamp()});
-    } catch(e){ setBtnLoading('signupBtn',false,'Create Account');shakeInput('signupEmail');showAuthError('signupError',friendlyError(e.code)); }
+    } catch(e){ setBtnLoading('signupBtn',false,'Create Account');shakeInput('signupEmail');showAuthError('signupError', e.code + ': ' + (e.message||'Unknown error')); }
   };
 
   window.doResetPassword = async ()=>{
