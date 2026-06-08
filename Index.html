@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Streak Forge</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d0d0f; --surface: #141418; --card: #1a1a20; --border: #2a2a35;
+      --ember: #ff6b1a; --ember-dim: #c44d0f; --gold: #ffb340; --ice: #4fc3f7;
+      --text: #e8e6e1; --muted: #6b6b7a; --success: #22c55e; --danger: #ef4444;
+      --radius: 14px;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; overflow-x: hidden; padding: 0 16px 80px;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 20% 10%, rgba(255,107,26,.08) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 60% at 80% 80%, rgba(79,195,247,.05) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* PARTICLES */
+    .particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .particle { position: absolute; border-radius: 50%; opacity: 0; animation: rise var(--dur,6s) ease-in var(--delay,0s) infinite; }
+    @keyframes rise {
+      0%   { transform: translateY(100vh) scale(1); opacity: 0; }
+      10%  { opacity: .7; } 80% { opacity: .3; }
+      100% { transform: translateY(-10vh) translateX(var(--dx,20px)) scale(.3); opacity: 0; }
+    }
+
+    /* WRAPPER */
+    .wrapper { position: relative; z-index: 1; max-width: 520px; margin: 0 auto; }
+
+    /* HEADER */
+    .welcome-line { margin: 20px 0 28px; animation: fadeDown .4s ease both; }
+    .welcome-line h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2.2rem, 8vw, 3.2rem); letter-spacing: .04em; line-height: 1;
+      background: linear-gradient(135deg, var(--ember) 0%, var(--gold) 60%, #fff 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      filter: drop-shadow(0 0 20px rgba(255,107,26,.3));
+    }
+
+    /* FORM CARD */
+    .form-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 22px; margin-bottom: 28px;
+      animation: fadeDown .5s .1s ease both; position: relative; overflow: hidden;
+    }
+    .form-card::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:2px;
+      background: linear-gradient(90deg, transparent, var(--ember), transparent);
+    }
+    .form-card label { display:block; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+    .field { margin-bottom: 14px; }
+    input[type="text"] {
+      width:100%; padding:12px 14px; font-family:'DM Sans',sans-serif; font-size:15px;
+      color:var(--text); background:var(--surface); border:1px solid var(--border);
+      border-radius:8px; outline:none;
+      transition:border-color .25s, box-shadow .25s, background .25s;
+    }
+    input[type="text"]::placeholder { color: var(--muted); }
+    input[type="text"]:focus { border-color:var(--ember); box-shadow:0 0 0 3px rgba(255,107,26,.15); background:#1e1e26; }
+
+    .pill-group { display:flex; gap:8px; flex-wrap:wrap; }
+    .pill {
+      flex:1 1 auto; padding:9px 12px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500;
+      border:1px solid var(--border); border-radius:40px; background:var(--surface); color:var(--muted);
+      cursor:pointer; transition:all .2s; text-align:center; user-select:none;
+    }
+    .pill:hover { border-color:var(--ember); color:var(--ember); }
+    .pill.active { background:var(--ember); border-color:var(--ember); color:#fff; font-weight:600; box-shadow:0 0 14px rgba(255,107,26,.35); }
+
+    .add-btn {
+      width:100%; margin-top:16px; padding:13px;
+      font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; letter-spacing:.03em;
+      color:#fff; background:linear-gradient(135deg,var(--ember),var(--ember-dim));
+      border:none; border-radius:8px; cursor:pointer;
+      position:relative; overflow:hidden;
+      transition:transform .15s, box-shadow .2s;
+      box-shadow:0 4px 20px rgba(255,107,26,.3);
+    }
+    .add-btn::after { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,.12) 0%,transparent 60%); pointer-events:none; }
+    .add-btn:hover  { transform:translateY(-2px); box-shadow:0 8px 28px rgba(255,107,26,.45); }
+    .add-btn:active { transform:translateY(1px); }
+    .add-btn .btn-inner { position:relative; z-index:1; display:flex; align-items:center; justify-content:center; gap:8px; }
+    .ripple { position:absolute; border-radius:50%; background:rgba(255,255,255,.3); transform:scale(0); animation:ripple-anim .55s linear; pointer-events:none; }
+    @keyframes ripple-anim { to{transform:scale(4);opacity:0} }
+
+    /* STATS */
+    .stats-bar { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:24px; animation:fadeDown .5s .2s ease both; }
+    .stat-box { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px; text-align:center; }
+    .stat-box .val { font-family:'Bebas Neue',sans-serif; font-size:1.9rem; color:var(--ember); line-height:1; }
+    .stat-box .lbl { font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-top:3px; }
+
+    /* STREAK CARDS */
+    .streak-list { display:flex; flex-direction:column; gap:12px; }
+    .streak-card {
+      background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+      padding:18px 20px; display:flex; align-items:center; gap:16px;
+      position:relative; overflow:hidden;
+      animation:slideUp .4s ease both;
+      transition:transform .2s, box-shadow .2s, border-color .2s;
+    }
+    .streak-card:hover { transform:translateY(-2px); border-color:#3a3a47; box-shadow:0 8px 32px rgba(0,0,0,.35); }
+    .streak-card.done { border-color:rgba(255,107,26,.25); }
+    .streak-card.done::after { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,107,26,.04) 0%,transparent 60%); pointer-events:none; }
+    .progress-line { position:absolute; bottom:0; left:0; height:2px; background:linear-gradient(90deg,var(--ember),var(--gold)); border-radius:0 2px 0 0; transition:width .8s cubic-bezier(.34,1.56,.64,1); }
+    .flame-wrap { position:relative; flex-shrink:0; width:52px; height:52px; display:flex; align-items:center; justify-content:center; }
+    .flame-bg { position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle,rgba(255,107,26,.18) 0%,transparent 70%); transition:transform .4s; }
+    .streak-card:hover .flame-bg { transform:scale(1.2); }
+    .flame-emoji { font-size:2rem; line-height:1; filter:drop-shadow(0 2px 8px rgba(255,107,26,.5)); display:block; transition:transform .3s; }
+    .streak-card:hover .flame-emoji { transform:scale(1.1) rotate(-5deg); }
+    .flame-emoji.burst { animation:flameBurst .5s ease; }
+    @keyframes flameBurst { 0%{transform:scale(1)} 40%{transform:scale(1.5) rotate(-8deg);filter:drop-shadow(0 4px 20px rgba(255,200,50,.9))} 70%{transform:scale(1.15) rotate(3deg)} 100%{transform:scale(1)} }
+    .streak-info { flex:1; min-width:0; }
+    .streak-name { font-size:16px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:5px; }
+    .streak-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .interval-badge { font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; padding:3px 8px; border-radius:20px; background:var(--surface); border:1px solid var(--border); color:var(--muted); }
+    .best-badge { font-size:10px; font-weight:600; padding:3px 8px; border-radius:20px; background:rgba(255,179,64,.12); border:1px solid rgba(255,179,64,.3); color:var(--gold); }
+    
+    /* AI QUOTE */
+    .quote-box {
+      background: linear-gradient(135deg, rgba(255,107,26,.1) 0%, rgba(255,179,64,.05) 100%);
+      border: 1px solid rgba(255,107,26,.2);
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 12px;
+      position: relative;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .quote-text {
+      font-size: 12px;
+      color: var(--gold);
+      font-style: italic;
+      line-height: 1.4;
+      flex: 1;
+      animation: quoteIn .5s ease;
+    }
+    @keyframes quoteIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .quote-spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255,107,26,.3);
+      border-top-color: var(--ember);
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+    }
+    .quote-refresh {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 14px;
+      cursor: pointer;
+      padding: 4px;
+      transition: color .2s;
+    }
+    .quote-refresh:hover { color: var(--ember); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .streak-right { display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex-shrink:0; }
+    .count-display { font-family:'Bebas Neue',sans-serif; font-size:2.2rem; line-height:1; color:var(--ember); filter:drop-shadow(0 0 10px rgba(255,107,26,.4)); min-width:48px; text-align:right; }
+    .count-display.pop { animation:countPop .45s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes countPop { 0%{transform:scale(1)} 50%{transform:scale(1.4);color:var(--gold);filter:drop-shadow(0 0 20px rgba(255,200,50,.9))} 100%{transform:scale(1)} }
+    
+    /* DONE BUTTON - EPIC ANIMATIONS */
+    .done-btn {
+      padding:8px 16px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600;
+      border:none; border-radius:6px; cursor:pointer;
+      background:linear-gradient(135deg,var(--ember),var(--ember-dim));
+      color:#fff; box-shadow:0 2px 12px rgba(255,107,26,.3);
+      transition:transform .15s, box-shadow .2s; white-space:nowrap;
+      position:relative; overflow:hidden;
+    }
+    .done-btn:hover  { transform:translateY(-1px); box-shadow:0 4px 18px rgba(255,107,26,.5); }
+    .done-btn:active { transform:translateY(1px); }
+    .done-btn.completed { background:var(--surface); border:1px solid var(--border); color:var(--success); box-shadow:none; cursor:default; }
+    
+    /* EPIC BUTTON PULSE */
+    .done-btn.pulse::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle, rgba(255,255,255,.4) 0%, transparent 70%);
+      animation: epicPulse .6s ease-out;
+    }
+    @keyframes epicPulse {
+      0% { transform: scale(0); opacity: 1; }
+      100% { transform: scale(2.5); opacity: 0; }
+    }
+
+    .delete-btn { position:absolute; top:10px; right:10px; width:22px; height:22px; border-radius:50%; background:transparent; border:none; color:var(--muted); font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .2s, background .2s, color .2s; }
+    .streak-card:hover .delete-btn { opacity:1; }
+    .delete-btn:hover { background:rgba(239,68,68,.15); color:#ef4444; }
+    .streak-card.removing { animation:slideOut .35s ease forwards; }
+    @keyframes slideOut { to{opacity:0;transform:translateX(60px) scaleX(.8);height:0;padding:0;margin:0} }
+
+    /* CONFETTI - EPIC */
+    .confetti-particle { position:fixed; border-radius:1px; pointer-events:none; z-index:999; animation:confettiFall var(--cf-dur,1.2s) ease-out forwards; }
+    @keyframes confettiFall { 0%{transform:translateY(0) rotate(0deg) scale(1);opacity:1} 100%{transform:translateY(var(--cf-dy,120px)) translateX(var(--cf-dx,0px)) rotate(var(--cf-rot,360deg)) scale(.4);opacity:0} }
+
+    /* EPIC SHOCKWAVE */
+    .shockwave {
+      position: fixed;
+      pointer-events: none;
+      z-index: 998;
+      border: 2px solid var(--ember);
+      border-radius: 50%;
+      animation: shockwaveAnim 0.8s ease-out forwards;
+    }
+    @keyframes shockwaveAnim {
+      0% { transform: scale(0.1); opacity: 1; box-shadow: 0 0 20px var(--ember); }
+      100% { transform: scale(3); opacity: 0; box-shadow: 0 0 60px rgba(255,107,26,0); }
+    }
+
+    /* EPIC FLASH */
+    .flash-overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(255,179,64,0.6) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 997;
+      animation: flashAnim 0.5s ease-out forwards;
+    }
+    @keyframes flashAnim {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* PARTICLE BURST */
+    .burst-particle {
+      position: fixed;
+      pointer-events: none;
+      z-index: 998;
+      animation: burstAnim 1s ease-out forwards;
+    }
+    @keyframes burstAnim {
+      0% { transform: translate(0,0) scale(1); opacity: 1; }
+      100% { transform: translate(var(--bx), var(--by)) scale(0); opacity: 0; }
+    }
+
+    /* TOAST */
+    .toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--ember); border-radius:40px; padding:12px 22px; font-size:14px; font-weight:500; color:var(--text); box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 20px rgba(255,107,26,.2); z-index:9999; transition:transform .4s cubic-bezier(.34,1.56,.64,1),opacity .3s; opacity:0; white-space:nowrap; }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+
+    /* EMPTY */
+    .empty { text-align:center; padding:40px 20px; color:var(--muted); animation:fadeDown .5s ease both; }
+    .empty .empty-icon { font-size:3rem; margin-bottom:12px; opacity:.4; }
+    .empty p { font-size:14px; }
+
+    @keyframes fadeDown { from{opacity:0;transform:translateY(-18px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes slideUp  { from{opacity:0;transform:translateY(20px)}  to{opacity:1;transform:translateY(0)} }
+  </style>
+</head>
+<body>
+
+<div class="particles" id="particles"></div>
+
+<div class="wrapper">
+
+  <div class="welcome-line">
+    <h2 id="welcomeText">🔥 Streak Forge</h2>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-box"><div class="val" id="statTotal">0</div><div class="lbl">Habits</div></div>
+    <div class="stat-box"><div class="val" id="statFire">0</div><div class="lbl">Done Today</div></div>
+    <div class="stat-box"><div class="val" id="statBest">0</div><div class="lbl">Best Streak</div></div>
+  </div>
+
+  <div class="form-card">
+    <div class="field">
+      <label>Habit Name</label>
+      <input type="text" id="streakName" placeholder="e.g. Morning run, Read 10 pages…" autocomplete="off" />
+    </div>
+    <div class="field">
+      <label>Frequency</label>
+      <div class="pill-group" id="pillGroup">
+        <div class="pill active" data-val="Daily">Daily</div>
+        <div class="pill" data-val="Weekly">Weekly</div>
+        <div class="pill" data-val="Monthly">Monthly</div>
+        <div class="pill" data-val="Yearly">Yearly</div>
+      </div>
+    </div>
+    <button class="add-btn" id="addBtn">
+      <span class="btn-inner"><span>＋</span><span>Add Habit</span></span>
+    </button>
+  </div>
+
+  <div class="streak-list" id="streakList"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── PARTICLES ──────────────────────────────────────
+  const pc = document.getElementById('particles');
+  for(let i=0;i<22;i++){
+    const p=document.createElement('div'); p.className='particle';
+    p.style.cssText=`left:${Math.random()*100}%;--dur:${5+Math.random()*8}s;--delay:${Math.random()*8}s;--dx:${(Math.random()-.5)*80}px;width:${1+Math.random()*3}px;height:${1+Math.random()*3}px;background:${Math.random()>.5?'#ff6b1a':'#ffb340'};`;
+    pc.appendChild(p);
+  }
+
+  // ── STATE ──────────────────────────────────────────
+  let streaks = JSON.parse(localStorage.getItem('streakForge')) || [];
+  let selectedInterval = 'Daily';
+
+  // ── HELPERS ────────────────────────────────────────
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  // ── PERIOD HELPERS ────────────────────────────────
+  function getPeriodKey(interval){
+    const n=new Date();
+    if(interval==='Daily')   return `${n.getFullYear()}-${n.getMonth()}-${n.getDate()}`;
+    if(interval==='Weekly')  { const d=new Date(n); d.setDate(d.getDate()-d.getDay()); return `W-${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }
+    if(interval==='Monthly') return `M-${n.getFullYear()}-${n.getMonth()}`;
+    if(interval==='Yearly')  return `Y-${n.getFullYear()}`;
+  }
+  function getLockMsg(i){ return {Daily:'Tomorrow',Weekly:'Next week',Monthly:'Next month',Yearly:'Next year'}[i]; }
+  function getProgressWidth(c){ const s=[0,7,21,66,100,365]; for(let i=1;i<s.length;i++) if(c<s[i]) return Math.round((c-s[i-1])/(s[i]-s[i-1])*100); return 100; }
+  function getMilestoneMsg(c){ return {1:'First step taken! 🚀',7:'One week strong! 🔥',21:'21 days — habit forming! ⚡',30:"30 day club! 🏆",66:"66 days — automatic now! 🧠",100:"100 streak! 💯",365:'ONE YEAR! Legend. 👑'}[c]||null; }
+  function getFlameEmoji(c){ if(c===0)return'🌱'; if(c<3)return'🌿'; if(c<21)return'🔥'; if(c<66)return'⚡'; if(c<100)return'🏆'; return'👑'; }
+
+  // ── STATS ──────────────────────────────────────────
+  function updateStats(){
+    animCount('statTotal', streaks.length);
+    animCount('statFire',  streaks.filter(s=>s.lastPeriod===getPeriodKey(s.interval)).length);
+    animCount('statBest',  streaks.reduce((m,s)=>Math.max(m,s.count),0));
+  }
+  function animCount(id,target){ const el=document.getElementById(id); if(!el)return; const cur=parseInt(el.textContent)||0; if(cur===target)return; const step=target>cur?1:-1; let v=cur; const t=()=>{ v+=step; el.textContent=v; if(v!==target)requestAnimationFrame(t); }; requestAnimationFrame(t); }
+
+  // ── RENDER ────────────────────────────────────────
+  function render(){
+    const list=document.getElementById('streakList'); list.innerHTML='';
+    if(streaks.length===0){
+      list.innerHTML=`<div class="empty"><div class="empty-icon">🌱</div><p>No habits yet. Add your first one above!</p></div>`;
+      updateStats(); return;
+    }
+    streaks.forEach((s,i)=>{
+      const isDone=s.lastPeriod===getPeriodKey(s.interval);
+      const card=document.createElement('div');
+      card.className=`streak-card${isDone?' done':''}`; card.style.animationDelay=`${i*.06}s`; card.dataset.index=i;
+      card.innerHTML=`
+        <button class="delete-btn" data-i="${i}" title="Delete">✕</button>
+        <div class="flame-wrap"><div class="flame-bg"></div><span class="flame-emoji">${getFlameEmoji(s.count)}</span></div>
+        <div class="streak-info">
+          <div class="streak-name">${esc(s.name)}</div>
+          <div class="streak-meta">
+            <span class="interval-badge">${s.interval}</span>
+            ${s.bestCount>s.count&&s.bestCount>0?`<span class="best-badge">Best: ${s.bestCount}</span>`:''}
+            ${isDone?`<span class="interval-badge" style="color:#22c55e;border-color:rgba(34,197,94,.3)">${getLockMsg(s.interval)} ✓</span>`:''}
+          </div>
+          <div class="quote-box" id="quote-${i}">
+            <div class="quote-spinner"></div>
+          </div>
+        </div>
+        <div class="streak-right">
+          <div class="count-display" id="cnt-${i}">${s.count}</div>
+          <button class="done-btn${isDone?' completed':''}" data-i="${i}" ${isDone?'disabled':''}>
+            ${isDone?'✓ Done':'Mark Done'}
+          </button>
+        </div>
+        <div class="progress-line" style="width:${getProgressWidth(s.count)}%"></div>`;
+      list.appendChild(card);
+    });
+    list.querySelectorAll('.done-btn:not([disabled])').forEach(b=>b.addEventListener('click',e=>completeStreak(+b.dataset.i,e)));
+    list.querySelectorAll('.delete-btn').forEach(b=>b.addEventListener('click',()=>deleteStreak(+b.dataset.i)));
+
+    // Fetch quotes for each streak
+    streaks.forEach((s,i)=>fetchQuote(i,s.name,s.count));
+    updateStats();
+  }
+
+  // ── COMPLETE - EPIC ANIMATIONS ────────────────────
+  async function completeStreak(i,e){
+    const s=streaks[i]; const period=getPeriodKey(s.interval);
+    if(s.lastPeriod===period) return;
+    s.count++; s.lastPeriod=period; s.bestCount=Math.max(s.bestCount||0,s.count);
+    localStorage.setItem('streakForge', JSON.stringify(streaks));
+
+    const btn = e.target;
+    const rect = btn.getBoundingClientRect();
+    const cx = rect.left + rect.width/2;
+    const cy = rect.top + rect.height/2;
+
+    // EPIC PULSE on button
+    btn.classList.add('pulse');
+    setTimeout(()=>btn.classList.remove('pulse'), 600);
+
+    // SHOCKWAVE from button
+    const shockwave = document.createElement('div');
+    shockwave.className = 'shockwave';
+    shockwave.style.cssText = `left:${cx}px;top:${cy}px;width:20px;height:20px;margin-left:-10px;margin-top:-10px;`;
+    document.body.appendChild(shockwave);
+    setTimeout(()=>shockwave.remove(), 800);
+
+    // FLASH overlay
+    const flash = document.createElement('div');
+    flash.className = 'flash-overlay';
+    document.body.appendChild(flash);
+    setTimeout(()=>flash.remove(), 500);
+
+    // BURST particles
+    for(let j=0;j<40;j++){
+      const p = document.createElement('div');
+      p.className = 'burst-particle';
+      const angle = (j/40) * Math.PI * 2;
+      const distance = 150 + Math.random() * 100;
+      const dx = Math.cos(angle) * distance;
+      const dy = Math.sin(angle) * distance;
+      const colors = ['#ff6b1a','#ffb340','#4fc3f7','#22c55e','#f472b6','#a78bfa'];
+      const color = colors[j % colors.length];
+      p.style.cssText = `left:${cx}px;top:${cy}px;width:${6+Math.random()*4}px;height:${6+Math.random()*4}px;background:${color};border-radius:50%;--bx:${dx}px;--by:${dy}px;`;
+      document.body.appendChild(p);
+      setTimeout(()=>p.remove(), 1000);
+    }
+
+    // CONFETTI
+    for(let j=0;j<40;j++){
+      const el=document.createElement('div'); el.className='confetti-particle';
+      const colors=['#ff6b1a','#ffb340','#4fc3f7','#22c55e','#f472b6','#a78bfa'];
+      el.style.cssText=`left:${cx}px;top:${cy}px;background:${colors[j%colors.length]};--cf-dx:${(Math.random()-.5)*200}px;--cf-dy:${100+Math.random()*150}px;--cf-rot:${(Math.random()-.5)*720}deg;--cf-dur:${.8+Math.random()*.6}s;border-radius:${Math.random()>.5?'50%':'2px'};width:7px;height:7px;`;
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(),1600);
+    }
+
+    // Count pop
+    const cntEl=document.getElementById(`cnt-${i}`);
+    if(cntEl){cntEl.textContent=s.count;cntEl.classList.remove('pop');void cntEl.offsetWidth;cntEl.classList.add('pop');}
+
+    // Flame burst
+    const card=document.querySelector(`.streak-card[data-index="${i}"]`);
+    if(card){const fe=card.querySelector('.flame-emoji');if(fe){fe.classList.remove('burst');void fe.offsetWidth;fe.textContent=getFlameEmoji(s.count);fe.classList.add('burst');}}
+
+    const msg=getMilestoneMsg(s.count); if(msg) showToast(msg);
+    await new Promise(r=>setTimeout(r,600));
+    render();
+  }
+
+  // ── DELETE ────────────────────────────────────────
+  function deleteStreak(i) {
+    const card=document.querySelector(`.streak-card[data-index="${i}"]`);
+    if(card){card.classList.add('removing');setTimeout(()=>{streaks.splice(i,1);localStorage.setItem('streakForge',JSON.stringify(streaks));render();},340);}
+  }
+
+  // ── TOAST ────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg){
+    const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),3200);
+  }
+
+  // ── PILLS / ADD ───────────────────────────────────
+  document.getElementById('pillGroup').addEventListener('click',e=>{
+    const p=e.target.closest('.pill'); if(!p) return;
+    document.querySelectorAll('.pill').forEach(x=>x.classList.remove('active'));
+    p.classList.add('active'); selectedInterval=p.dataset.val;
+  });
+
+  document.getElementById('addBtn').addEventListener('click',function(e){
+    const name=document.getElementById('streakName').value.trim();
+    if(!name){
+      const inp=document.getElementById('streakName');
+      inp.style.borderColor='#ef4444'; inp.style.boxShadow='0 0 0 3px rgba(239,68,68,.15)';
+      setTimeout(()=>{ inp.style.borderColor=''; inp.style.boxShadow=''; },900);
+      return;
+    }
+    const rect=this.getBoundingClientRect();
+    const r=document.createElement('span'); r.className='ripple';
+    r.style.cssText=`left:${e.clientX-rect.left-20}px;top:${e.clientY-rect.top-20}px;width:40px;height:40px`;
+    this.appendChild(r); setTimeout(()=>r.remove(),600);
+    streaks.unshift({name,interval:selectedInterval,count:0,bestCount:0,lastPeriod:null,created:Date.now()});
+    document.getElementById('streakName').value='';
+    localStorage.setItem('streakForge',JSON.stringify(streaks));
+    render();
+    showToast(`"${name}" added! Let's go 🔥`);
+  });
+
+  document.getElementById('streakName').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('addBtn').click(); });
+
+  // ── AI QUOTES ──────────────────────────────────────
+  async function fetchQuote(index, habitName, count) {
+    const quoteBox = document.getElementById(`quote-${index}`);
+    if (!quoteBox) return;
+
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": "sk-ant-v1-",
+        },
+        body: JSON.stringify({
+          model: "claude-opus-4-6",
+          max_tokens: 100,
+          messages: [
+            {
+              role: "user",
+              content: `Generate a SHORT (max 15 words), motivational quote for someone doing "${habitName}" habit. They're on day ${count} of their streak. Make it specific to the habit, encouraging, and inspiring. Just the quote, no quotes marks.`
+            }
+          ]
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const quote = data.content[0].text.trim();
+        quoteBox.innerHTML = `<span class="quote-text">"${quote}"</span><button class="quote-refresh" onclick="location.reload()">↻</button>`;
+      } else {
+        quoteBox.innerHTML = `<span class="quote-text">✨ You've got this!</span>`;
+      }
+    } catch (e) {
+      quoteBox.innerHTML = `<span class="quote-text">✨ Keep building!</span>`;
+    }
+  }
+
+  render();
+</script>
+</body>
+</html>
